@@ -1,0 +1,66 @@
+// =============================================================================
+//  Flipper.cpp
+//  See Flipper.hpp for wiring, timing, and usage notes.
+// =============================================================================
+
+#include "Flipper.hpp"
+
+void Flipper::init(ShiftRegister* sr_,
+                   uint8_t outChip_, uint8_t outPin_,
+                   uint8_t eosChip_, uint8_t eosPin_,
+                   uint8_t btnChip_, uint8_t btnPin_)
+{
+    sr         = sr_;
+    outChip    = outChip_;  outPin  = outPin_;
+    eosChip    = eosChip_;  eosPin  = eosPin_;
+    btnChip    = btnChip_;  btnPin  = btnPin_;
+    state      = 0;
+    dutyCycle  = 0;
+    highCount  = 0;
+    pwmCounter = 0;
+}
+
+void Flipper::tick()
+{
+    bool buttonReleased = sr->readInput(btnChip, btnPin);  // 1 = not pressed
+    bool eosActive      = sr->readInput(eosChip, eosPin);  // 1 = EOS triggered
+
+    if (buttonReleased) {
+        // Button released – cut power immediately
+        state     = 0;
+        dutyCycle = 0;
+
+    } else if (state == 0) {
+        // New flip – full power kick
+        state     = 1;
+        dutyCycle = 100;
+        highCount = 0;
+
+    } else if (state == 1) {
+        // Flipping – count until kick duration expires then drop to hold power
+        if (highCount <= 400) {
+            highCount++;
+        } else {
+            state     = 2;
+            dutyCycle = 20;
+        }
+
+    } else if (state == 2) {
+        // Holding – if EOS switch opens (ball left), kick again
+        if (!eosActive) {
+            state     = 1;
+            dutyCycle = 100;
+            highCount = 0;
+        }
+
+    } else {
+        // Default / safety
+        state     = 0;
+        dutyCycle = 0;
+    }
+
+    // Apply software PWM.
+    // Open-drain: gate ON when pwmCounter < dutyCycle (setOutput false = ON)
+    sr->setOutput(outChip, outPin, pwmCounter >= dutyCycle);
+    if (++pwmCounter >= 100) pwmCounter = 0;
+}
