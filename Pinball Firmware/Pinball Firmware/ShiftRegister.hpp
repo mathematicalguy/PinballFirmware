@@ -35,8 +35,8 @@
 // =============================================================================
 
 // Number of ICs in each chain – adjust if you add / remove chips
-static constexpr uint8_t SR_OUTPUT_CHIPS = 3;   // TPIC6C596
-static constexpr uint8_t SR_INPUT_CHIPS  = 3;   // SN74HC165
+static const uint8_t SR_OUTPUT_CHIPS = 3;   // TPIC6C596
+static const uint8_t SR_INPUT_CHIPS  = 3;   // SN74HC165
 
 class ShiftRegister
 {
