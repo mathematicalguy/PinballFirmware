@@ -35,7 +35,7 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 | UBRR | 3 |
 | RTS/DE pin | PD2 (Arduino pin 2) — HIGH = transmit, LOW = receive |
 
-**Protocol:** Master sends a 6-byte burst every ~30 ms containing the node address, two register address/value pairs (lower and upper score bytes), and a stop packet. Receivers use MPCM to ignore traffic not addressed to their node.
+**Protocol:** Master sends a 6-byte burst on demand via `sendScore(uint16_t score)` containing the node address, two register address/value pairs (lower and upper score bytes), and a stop packet. Receivers use MPCM to ignore traffic not addressed to their node.
 
 | Pin | Port | Arduino Pin | Function |
 |-----|------|-------------|----------|

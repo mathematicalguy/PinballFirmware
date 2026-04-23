@@ -10,12 +10,15 @@
 #include <avr/interrupt.h>
 #include "ShiftRegister.hpp"
 #include "Flipper.hpp"
+#include "RS485_USART.h"
 
 ShiftRegister sr(&PORTB, &DDRB, PB2,   // latchIn  = pin 10
 				 &PORTB, &DDRB, PB1);  // latchOut = pin  9
 
 Flipper leftFlipper;
 Flipper rightFlipper;
+
+volatile uint16_t score = 10;
 
 // Timer1 COMPA ISR – fires at 4 kHz (every 250 µs)
 ISR(TIMER1_COMPA_vect)
@@ -26,10 +29,13 @@ ISR(TIMER1_COMPA_vect)
 	sr.writeAll();
 }
 
+// USART TX-complete ISR is defined in RS485_USART.cpp
+
 int main(void)
 {
 	sr.begin();
-
+	usart.begin(true);  // configure as master/transmitter
+	usart.sendScore(score);
 	// Left  flipper: output chip 0 pin 0 | EOS chip 1 pin 3 | button chip 1 pin 2
 	leftFlipper.init(&sr,  0, 0,  1, 3,  1, 2);
 	// Right flipper: output chip 0 pin 1 | EOS chip 1 pin 1 | button chip 1 pin 0

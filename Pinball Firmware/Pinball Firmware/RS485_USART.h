@@ -71,11 +71,13 @@ public:
     // -----------------------------------------------------------------------
 
     /**
-     * Called from Timer 1 ISR every 30 ms.
-     * Increments the internal counter, updates the score every 150 ms,
-     * refreshes the tx buffer, and kicks off a new 6-byte transmission.
+     * Transmit a new score value immediately over RS485.
+     * Updates the internal score, refreshes the tx buffer, and kicks off
+     * a new 6-byte transmission.  Call this whenever the score changes.
+     *
+     * @param score  The new 16-bit score to send.
      */
-    void timerISR();
+    void sendScore(uint16_t score);
 
     /**
      * Called from the USART0 TX-complete ISR.
@@ -112,8 +114,6 @@ private:
     // -----------------------------------------------------------------------
     uint8_t     _txBuffer[TX_BUFFER_SIZE]; ///< 6-byte transmission sequence
     volatile uint8_t _bufferIndex;   ///< next byte to send from _txBuffer
-    volatile uint8_t _isrCount;      ///< counts 30 ms ticks for 150 ms gate
-    volatile uint8_t _timerSubCount; ///< counts Timer2 sub-ticks (3 × ~10 ms = ~30 ms)
 
     // -----------------------------------------------------------------------
     // Receiver state machine

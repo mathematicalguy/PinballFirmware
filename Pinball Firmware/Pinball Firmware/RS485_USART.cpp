@@ -27,8 +27,6 @@ RS485_USART::RS485_USART()
     : _isMaster(false),
       _score(0),
       _bufferIndex(0),
-      _isrCount(0),
-      _timerSubCount(0),
       _usartState(0),
       _usartAddress(0),
       _scoreLow(0)
@@ -61,19 +59,6 @@ void RS485_USART::begin(bool isMaster)
         // Transmitter: stay in transmit mode throughout; TX Complete ISR
         // is enabled on demand at the start of each 6-byte burst.
         _enableTransmit();
-
-        // -----------------------------------------------------------------
-        // Timer 2 – CTC mode, fires every ~10 ms (3 sub-ticks = ~30 ms)
-        // F_CPU = 16 MHz, prescaler = 1024
-        // OCR2A = (16 000 000 / 1024 / 100) - 1 = 155  ? ~100 Hz per tick
-        // Timer 1 is reserved for the flipper ISR.
-        // -----------------------------------------------------------------
-        TCCR2A = (1 << WGM21);            // CTC mode (TOP = OCR2A)
-        TCCR2B = (1 << CS22)              // prescaler = 1024
-               | (1 << CS21)
-               | (1 << CS20);
-        OCR2A  = 155;
-        TIMSK2 = (1 << OCIE2A);           // enable Output Compare A interrupt
     } else {
         // Receiver: enable Multiprocessor Communication Mode so that frames
         // whose 9th bit is 0 (data frames) are ignored until an address frame
@@ -149,29 +134,17 @@ void RS485_USART::_updateTxBuffer()
 }
 
 // ---------------------------------------------------------------------------
-// timerISR()  –  called from ISR(TIMER1_COMPA_vect) every 30 ms
+// sendScore()  –  transmit a new score value immediately
 // ---------------------------------------------------------------------------
 
-void RS485_USART::timerISR()
+void RS485_USART::sendScore(uint16_t score)
 {
-    // ---- Sub-tick gate: Timer2 fires ~100 Hz; run logic every 3rd tick (~30 ms)
-    if (++_timerSubCount < 3) return;
-    _timerSubCount = 0;
+    _score = score;
+    _updateTxBuffer();
 
-    // ---- Score update gate (every 5th call = 150 ms) ----------------------
-    _isrCount++;
-    if (_isrCount >= SCORE_UPDATE_INTERVAL) {
-        _score++;
-        _isrCount = 0;
-        _updateTxBuffer(); // keep buffer in sync with new score
-    }
-
-    // ---- Kick off a new 6-byte transmission --------------------------------
-    // Send the first byte (node address frame: bit8 = 1, value = 0x10).
-    _bufferIndex = 1;           // TX Complete ISR will continue from index 1
-
-    _enableTxISR();             // arm the TX Complete ISR for subsequent bytes
-    _write9Bit(SCOREBOARD_NODE_ADDR); // transmit address frame (bit8 = 1)
+    _bufferIndex = 1;                     // TX Complete ISR continues from index 1
+    _enableTxISR();                       // arm the TX Complete ISR for subsequent bytes
+    _write9Bit(SCOREBOARD_NODE_ADDR);     // send address frame (bit8 = 1)
 }
 
 // ---------------------------------------------------------------------------
@@ -263,12 +236,6 @@ void RS485_USART::rxCompleteISR()
 // ---------------------------------------------------------------------------
 
 RS485_USART usart;
-
-/** Timer 2 Compare A ISR – fires every ~10 ms; logic runs every 3rd tick (~30 ms). */
-ISR(TIMER2_COMPA_vect)
-{
-    usart.timerISR();
-}
 
 /** USART0 TX Complete ISR – fires on the transmitter after each byte. */
 ISR(USART_TX_vect)
