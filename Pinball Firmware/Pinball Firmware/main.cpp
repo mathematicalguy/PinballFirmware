@@ -97,6 +97,13 @@ int main(void)
 	rightFlipper.init(&sr, 0, 1,  1, 1,  1, 0);
 
 	// Timer1 CTC at 4 kHz: prescaler 8, OCR1A = (16 000 000 / 8 / 4000) - 1 = 499
+
+	// Pre-fill debounce history with real hardware state so the edge detectors
+	// in the ISR don't see a false rising edge on the very first tick.
+	for (uint8_t i = 0; i < 8; i++) sr.readAll();
+	prevTrigBtn  = sr.readInput(1, 4);
+	prevScoreBtn = sr.readInput(0, 4);
+
 	OCR1A  = 499;
 	TCCR1B = (1 << WGM12) | (1 << CS11);  // CTC mode, prescaler 8
 	TIMSK1 = (1 << OCIE1A);               // enable compare-match interrupt

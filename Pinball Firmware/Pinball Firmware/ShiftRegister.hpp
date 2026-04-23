@@ -107,8 +107,14 @@ class ShiftRegister
 	uint8_t           _latchOutBit;
 
 	// --- shadow buffers ---
-	uint8_t _outputBuf[SR_OUTPUT_CHIPS];
-	uint8_t _inputBuf [SR_INPUT_CHIPS];
+	uint8_t _outputBuf   [SR_OUTPUT_CHIPS];
+	uint8_t _inputBuf    [SR_INPUT_CHIPS];   // raw samples from last readAll()
+	uint8_t _debouncedBuf[SR_INPUT_CHIPS];   // stable debounced state
+
+	// --- debounce history (circular sample buffer) ---
+	static const uint8_t SR_DEBOUNCE_SAMPLES = 8; // 8 x 250 µs = 2 ms
+	uint8_t _debounceHistory[SR_INPUT_CHIPS][8];
+	uint8_t _debounceHead;                        // next write index (0–7)
 
 	// --- private helpers ---
 	inline void latchInHigh()  { *_latchInPort  |=  (1u << _latchInBit);  }

@@ -56,8 +56,11 @@ _latchOutPort(latchOutPort),
 _latchOutDDR (latchOutDDR),
 _latchOutBit (latchOutBit)
 {
-	memset(_outputBuf, 0x00, sizeof(_outputBuf));
-	memset(_inputBuf,  0x00, sizeof(_inputBuf));
+	memset(_outputBuf,        0x00, sizeof(_outputBuf));
+	memset(_inputBuf,         0x00, sizeof(_inputBuf));
+	memset(_debouncedBuf,     0x00, sizeof(_debouncedBuf));
+	memset(_debounceHistory,  0x00, sizeof(_debounceHistory));
+	_debounceHead = 0;
 }
 
 // =============================================================================
@@ -215,10 +218,30 @@ void ShiftRegister::readAll()
 		uint8_t raw = spiTransfer(0x00);
 
 		#if SR_REVERSE_INPUT_BITS
-		_inputBuf[i] = reverseByte(raw);
-		#else
-		_inputBuf[i] = raw;
+		raw = reverseByte(raw);
 		#endif
+
+		_inputBuf[i]                       = raw;
+		_debounceHistory[i][_debounceHead] = raw;
+	}
+
+	// Advance circular buffer head
+	_debounceHead = (_debounceHead + 1) & (SR_DEBOUNCE_SAMPLES - 1);
+
+	// Update debounced state: a bit is 1 only if all samples are 1,
+	//                         a bit is 0 only if all samples are 0,
+	//                         otherwise it holds its last stable value.
+	for (uint8_t i = 0; i < SR_INPUT_CHIPS; i++)
+	{
+		uint8_t allHigh = 0xFF;
+		uint8_t allLow  = 0xFF;
+		for (uint8_t s = 0; s < SR_DEBOUNCE_SAMPLES; s++)
+		{
+			allHigh &=  _debounceHistory[i][s];  // bits that are 1 in every sample
+			allLow  &= ~_debounceHistory[i][s];  // bits that are 0 in every sample
+		}
+		_debouncedBuf[i] = (_debouncedBuf[i] & ~(allHigh | allLow))
+						 | (allHigh);
 	}
 }
 
@@ -229,11 +252,11 @@ void ShiftRegister::readAll()
 bool ShiftRegister::readInput(uint8_t chip, uint8_t pin) const
 {
 	if (chip >= SR_INPUT_CHIPS || pin > 7) return false;
-	return  ~(_inputBuf[chip] >> pin) & 0x01;
+	return (_debouncedBuf[chip] >> pin) & 0x01;
 }
 
 uint8_t ShiftRegister::readInputByte(uint8_t chip) const
 {
 	if (chip >= SR_INPUT_CHIPS) return 0;
-	return  ~_inputBuf[chip];
+	return _debouncedBuf[chip];
 }
