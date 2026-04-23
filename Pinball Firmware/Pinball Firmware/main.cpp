@@ -42,7 +42,7 @@ ISR(TIMER1_COMPA_vect)
 	rightFlipper.tick();
 
 	// --- Trigger button: input chip 1 pin 4 (rising-edge detect) ---
-	bool trigBtn = sr.readInput(1, 4);
+	bool trigBtn = sr.readInput(1, 6);
 	if (trigBtn && !prevTrigBtn) {
 		// Rising edge – start (or restart) the 5-second flash window
 		flashTimer   = FLASH_DURATION;

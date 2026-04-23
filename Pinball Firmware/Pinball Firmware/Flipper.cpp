@@ -22,13 +22,14 @@ void Flipper::init(ShiftRegister* sr_,
 
 void Flipper::tick()
 {
-    bool buttonReleased = !sr->readInput(btnChip, btnPin); // button HIGH = pressed, so invert for "released"
+    bool buttonReleased = sr->readInput(btnChip, btnPin); // button HIGH = pressed, so invert for "released"
     bool eosActive      = !sr->readInput(eosChip, eosPin); // EOS LOW = triggered, so invert for "active"
 
     if (buttonReleased) {
         // Button released – cut power immediately
-        state     = 0;
-        dutyCycle = 0;
+        state      = 0;
+        dutyCycle  = 0;
+        pwmCounter = 0;  // reset cycle so output goes off this tick
 
     } else if (state == 0) {
         // New flip – full power kick
@@ -42,7 +43,7 @@ void Flipper::tick()
             highCount++;
         } else {
             state     = 2;
-            dutyCycle = 20;
+            dutyCycle = 5;
         }
 
     } else if (state == 2) {
@@ -55,12 +56,14 @@ void Flipper::tick()
 
     } else {
         // Default / safety
-        state     = 0;
-        dutyCycle = 0;
+        state      = 0;
+        dutyCycle  = 0;
+        pwmCounter = 0;
     }
 
     // Apply software PWM.
-    // Open-drain: gate ON when pwmCounter < dutyCycle (setOutput false = ON)
-    sr->setOutput(outChip, outPin, pwmCounter >= dutyCycle);
+    // setOutput(true) = bit 1 = TPIC gate ON = drain sinks = output HIGH (coil energised)
+    // setOutput(false) = bit 0 = TPIC gate OFF = drain high-Z = output LOW (coil off)
+    sr->setOutput(outChip, outPin, pwmCounter < dutyCycle);
     if (++pwmCounter >= 100) pwmCounter = 0;
 }
