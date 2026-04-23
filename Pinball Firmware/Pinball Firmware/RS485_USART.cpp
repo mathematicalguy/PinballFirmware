@@ -139,10 +139,16 @@ void RS485_USART::_updateTxBuffer()
 
 void RS485_USART::sendScore(uint16_t score)
 {
+    // Wait for any in-progress burst to finish (TX Complete ISR disables itself
+    // after the stop packet, clearing TXCIE0).  This prevents a concurrent call
+    // from the main loop corrupting a still-running transmission.
+    while (UCSR0B & (1 << TXCIE0));
+
     _score = score;
     _updateTxBuffer();
 
     _bufferIndex = 1;                     // TX Complete ISR continues from index 1
+    UCSR0A |= (1 << TXC0);               // clear stale TX Complete flag (write 1 to clear)
     _enableTxISR();                       // arm the TX Complete ISR for subsequent bytes
     _write9Bit(SCOREBOARD_NODE_ADDR);     // send address frame (bit8 = 1)
 }

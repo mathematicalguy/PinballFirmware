@@ -210,7 +210,7 @@ void ShiftRegister::readAll()
 	// --- Step 2: clock out all bits ---
 	// Send dummy 0x00 on MOSI (unused by 74HC165); capture MISO.
 	// chip[N-1] is closest to MISO so its data arrives first.
-	for (int8_t i = (int8_t)SR_INPUT_CHIPS - 1; i >= 0; i--)
+	for (uint8_t i = 0; i < SR_INPUT_CHIPS; i++)
 	{
 		uint8_t raw = spiTransfer(0x00);
 
@@ -229,11 +229,11 @@ void ShiftRegister::readAll()
 bool ShiftRegister::readInput(uint8_t chip, uint8_t pin) const
 {
 	if (chip >= SR_INPUT_CHIPS || pin > 7) return false;
-	return (_inputBuf[chip] >> pin) & 0x01;
+	return  ~(_inputBuf[chip] >> pin) & 0x01;
 }
 
 uint8_t ShiftRegister::readInputByte(uint8_t chip) const
 {
 	if (chip >= SR_INPUT_CHIPS) return 0;
-	return _inputBuf[chip];
+	return  ~_inputBuf[chip];
 }

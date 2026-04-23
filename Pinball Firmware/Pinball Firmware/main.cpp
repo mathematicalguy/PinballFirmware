@@ -8,6 +8,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "ShiftRegister.hpp"
 #include "Flipper.hpp"
 #include "RS485_USART.h"
@@ -79,8 +80,18 @@ int main(void)
 {
 	sr.begin();
 	usart.begin(true);  // configure as master/transmitter (also calls sei())
+	_delay_ms(100);     // wait for scoreboard USART to initialise after power-on
 	usart.sendScore(score);
-	// Left  flipper: output chip 0 pin 0 | EOS chip 1 pin 3 | button chip 1 pin 2
+	score = score + 2;
+	_delay_ms(1000);
+	usart.sendScore(score);
+
+	// Mirror all input SPI port 0 bits to output SPI port 2
+	sr.readAll();
+	sr.setOutputByte(2, sr.readInputByte(0));
+	sr.writeAll();
+
+	// Left  flipper:
 	leftFlipper.init(&sr,  0, 0,  1, 3,  1, 2);
 	// Right flipper: output chip 0 pin 1 | EOS chip 1 pin 1 | button chip 1 pin 0
 	rightFlipper.init(&sr, 0, 1,  1, 1,  1, 0);

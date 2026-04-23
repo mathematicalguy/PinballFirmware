@@ -22,8 +22,8 @@ void Flipper::init(ShiftRegister* sr_,
 
 void Flipper::tick()
 {
-    bool buttonReleased = sr->readInput(btnChip, btnPin);  // 1 = not pressed
-    bool eosActive      = sr->readInput(eosChip, eosPin);  // 1 = EOS triggered
+    bool buttonReleased = !sr->readInput(btnChip, btnPin); // button HIGH = pressed, so invert for "released"
+    bool eosActive      = !sr->readInput(eosChip, eosPin); // EOS LOW = triggered, so invert for "active"
 
     if (buttonReleased) {
         // Button released – cut power immediately
