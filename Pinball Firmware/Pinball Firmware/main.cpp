@@ -11,6 +11,7 @@
 #include <util/delay.h>
 #include "ShiftRegister.hpp"
 #include "Flipper.hpp"
+#include "LaunchSolenoid.hpp"
 #include "RS485_USART.h"
 
 ShiftRegister sr(&PORTB, &DDRB, PB2,   // latchIn  = pin 10
@@ -18,6 +19,7 @@ ShiftRegister sr(&PORTB, &DDRB, PB2,   // latchIn  = pin 10
 
 Flipper leftFlipper;
 Flipper rightFlipper;
+LaunchSolenoid launchSolenoid;
 
 volatile uint16_t score = 10;
 
@@ -40,6 +42,7 @@ ISR(TIMER1_COMPA_vect)
 	sr.readAll();
 	leftFlipper.tick();
 	rightFlipper.tick();
+	launchSolenoid.tick();
 
 	// --- Trigger button: input chip 1 pin 4 (rising-edge detect) ---
 	bool trigBtn = sr.readInput(1, 6);
@@ -95,6 +98,8 @@ int main(void)
 	leftFlipper.init(&sr,  0, 0,  1, 3,  1, 2);
 	// Right flipper: output chip 0 pin 1 | EOS chip 1 pin 1 | button chip 1 pin 0
 	rightFlipper.init(&sr, 0, 1,  1, 1,  1, 0);
+	// Launch solenoid: output chip 0 pin 2 | button chip 1 pin 4
+	launchSolenoid.init(&sr, 0, 2,  1, 4);
 
 	// Timer1 CTC at 4 kHz: prescaler 8, OCR1A = (16 000 000 / 8 / 4000) - 1 = 499
 

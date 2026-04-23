@@ -159,6 +159,12 @@
     <Compile Include="Flipper.hpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="LaunchSolenoid.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="LaunchSolenoid.hpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.cpp">
       <SubType>compile</SubType>
     </Compile>
