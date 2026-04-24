@@ -118,7 +118,7 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 
 | Pin | Function      |
 |-----|---------------|
-|  0  | (unassigned)  |
+|  0  | Ramp lane	  |
 |  1  | Drop target 1 |
 |  2  | Drop target 2 |
 |  3  | Drop target 3 |

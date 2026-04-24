@@ -100,7 +100,11 @@ int main(void)
 	sr.readAll();
 	sr.setOutputByte(2, 0xAF);
 	sr.writeAll();
-
+	
+	//------------------------------------------------------------------------
+	// Initialization
+	//------------------------------------------------------------------------
+	
 	// Left  flipper: output chip 0 pin 0 | EOS chip 1 pin 3 | buton chip 1 pin 2
 	leftFlipper.init(&sr,  0, 0,  1, 3,  1, 2);
 	// Right flipper: output chip 0 pin 1 | EOS chip 1 pin 1 | button chip 1 pin 0
@@ -110,8 +114,11 @@ int main(void)
 	// Drop target bank: inputs chip 2 pins 1-3 | reset solenoid chip 0 pin 4
 	dropBank.init(&sr, 2,  0, 4,  &dropBankPoints);
 
-	// Timer1 CTC at 4 kHz: prescaler 8, OCR1A = (16 000 000 / 8 / 4000) - 1 = 499
 
+	//------------------------------------------------------------------------
+	// History 
+	//------------------------------------------------------------------------
+	
 	// Pre-fill debounce history with real hardware state so the edge detectors
 	// in the ISR don't see a false rising edge on the very first tick.
 	for (uint8_t i = 0; i < 8; i++) sr.readAll();
@@ -126,6 +133,8 @@ int main(void)
 	if (sr.readInput(2, 3)) initTargets |= (1 << 2);
 	dropBank.prevTargetState = initTargets;
 
+
+	// Timer1 CTC at 4 kHz: prescaler 8, OCR1A = (16 000 000 / 8 / 4000) - 1 = 499
 	OCR1A  = 499;
 	TCCR1B = (1 << WGM12) | (1 << CS11);  // CTC mode, prescaler 8
 	TIMSK1 = (1 << OCIE1A);               // enable compare-match interrupt
