@@ -56,16 +56,16 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 |  2  | Launch solenoid                 |
 |  3  | (unassigned)                    |
 |  4  | Drop target bank reset solenoid |
-|  5  | (unassigned)                    |
-|  6  | (unassigned)                    |
+|  5  | (unassigned) - LED burnt out    |
+|  6  | (unassigned) - Led burnt out    |
 |  7  | Quick Shot LED                  |
 
 **Out 1**
 
 | Pin | Function     |
 |-----|--------------|
-|  0  | (unassigned) |
-|  1  | (unassigned) |
+|  0  | F lane Hit   |
+|  1  | Y lane Hit   |
 |  2  | (unassigned) |
 |  3  | (unassigned) |
 |  4  | (unassigned) |

@@ -59,6 +59,20 @@ static uint8_t prevSeq0 = 0;  // In0 bits 0-4
 static uint8_t prevSeq1 = 0;  // In1 bits 6-7
 static uint8_t prevSeq2 = 0;  // In2 bits 0-3
 
+// ---------------------------------------------------------------------------
+// Top-lane light state  (F lane = In0.1 / Out0.5 | Y lane = In0.2 / Out0.6)
+//   Rolling over an unlit lane lights it.
+//   Either flipper button (In1.0 or In1.2) rotates the two lights.
+//   Both lit -> +50 jackpot, both reset.
+// ---------------------------------------------------------------------------
+static bool    fLit           = false; // F lane LED state
+static bool    yLit           = false; // Y lane LED state
+volatile bool  laneJackpotFlag = false; // set in ISR, consumed in main loop
+static uint8_t prevFlipBtns  = 0;     // In1 pins 0,2 (right/left flipper buttons)
+
+static const uint16_t JACKPOT_CELEBRATE = 12000u; // 3 s @ 4 kHz
+static uint16_t jackpotCelebTimer = 0;            // ticks remaining; 0 = inactive
+
 // Timer1 COMPA ISR – fires at 4 kHz (every 250 µs)
 ISR(TIMER1_COMPA_vect)
 {
@@ -114,6 +128,39 @@ ISR(TIMER1_COMPA_vect)
 			break;
 	}
 
+	// ---- Top lane lights: F (In0.1) and Y (In0.2) | LEDs Out0.5 and Out0.6 ----
+	// Flipper buttons are exempt from sequence tracking, so read them separately.
+	const uint8_t flipMask = 0x05u;              // In1 bit0 = right btn, bit2 = left btn
+	uint8_t curFlip  = sr.readInputByte(1) & flipMask;
+	uint8_t riseFlip = curFlip & ~prevFlipBtns;
+	prevFlipBtns = curFlip;
+
+	if (rise0 & (1u << 1)) fLit = true;          // F lane rolled over
+	if (rise0 & (1u << 2)) yLit = true;          // Y lane rolled over
+
+	if (riseFlip && jackpotCelebTimer == 0) {     // either flipper button pressed (not during celebration)
+		bool tmp = fLit;  fLit = yLit;  yLit = tmp; // rotate lights
+	}
+
+	if (fLit && yLit && jackpotCelebTimer == 0) {  // both lit: start celebration
+		jackpotCelebTimer = JACKPOT_CELEBRATE;
+		laneJackpotFlag   = true;
+	}
+
+	// Drive LEDs every tick (open-drain: true = gate ON = LED on)
+	if (jackpotCelebTimer > 0) {
+		// Hold both LEDs on for the celebration window, then reset
+		sr.setOutput(1, 0, true);
+		sr.setOutput(1, 1, true);
+		jackpotCelebTimer--;
+		if (jackpotCelebTimer == 0) {
+			fLit = false;
+			yLit = false;
+		}
+	} else {
+		sr.setOutput(1, 0, fLit);
+		sr.setOutput(1, 1, yLit);
+	}
 	// ---- Trigger button: In1 pin 6 / Right Lane (rising-edge detect) ----
 	if (gotRightLane) {
 		flashTimer   = FLASH_DURATION;
@@ -185,9 +232,10 @@ int main(void)
 	// Pre-fill debounce history with real hardware state so the edge detectors
 	// in the ISR don't see a false rising edge on the very first tick.
 	for (uint8_t i = 0; i < 8; i++) sr.readAll();
-	prevSeq0 = sr.readInputByte(0) & 0x1Fu;  // In0 pins 0-4
-	prevSeq1 = sr.readInputByte(1) & 0xC0u;  // In1 pins 6-7
-	prevSeq2 = sr.readInputByte(2) & 0x0Fu;  // In2 pins 0-3
+	prevSeq0     = sr.readInputByte(0) & 0x1Fu;  // In0 pins 0-4
+	prevSeq1     = sr.readInputByte(1) & 0xC0u;  // In1 pins 6-7
+	prevSeq2     = sr.readInputByte(2) & 0x0Fu;  // In2 pins 0-3
+	prevFlipBtns = sr.readInputByte(1) & 0x05u;  // In1 pins 0,2 (flipper buttons)
 
 	// Pre-fill drop bank edge-detector so targets already down at power-on
 	// are not treated as new hits on the first ISR tick.
@@ -238,6 +286,11 @@ int main(void)
 		if (seqDoneFlag) {
 			seqDoneFlag  = false;
 			negativeMode = !negativeMode;
+		}
+		if (laneJackpotFlag) {
+			laneJackpotFlag = false;
+			APPLY_SCORE(50UL);
+			usart.sendScore(score);
 		}
 	}
 }
