@@ -38,9 +38,11 @@ static const uint16_t FLASH_HALF_PER  =  1000u; // 250 ms half-period (2 Hz)
 volatile uint16_t flashTimer    = 0;     // ticks remaining in window; 0 = inactive
 volatile uint16_t flashTick     = 0;     // free-running tick within current window
 volatile bool     scoreAwarded  = false; // prevents multiple awards per window
-volatile bool     addScoreFlag  = false; // set in ISR, consumed in main loop
-static   bool     prevTrigBtn   = false; // previous state of trigger button
-static   bool     prevScoreBtn  = false; // previous state of score button
+volatile bool     addScoreFlag      = false; // set in ISR, consumed in main loop
+volatile bool     rampLaneFlag      = false; // set in ISR, consumed in main loop
+static   bool     prevTrigBtn       = false; // previous state of trigger button
+static   bool     prevScoreBtn      = false; // previous state of score button
+static   bool     prevRampLane      = false; // previous state of ramp lane
 
 // Timer1 COMPA ISR – fires at 4 kHz (every 250 µs)
 ISR(TIMER1_COMPA_vect)
@@ -80,6 +82,13 @@ ISR(TIMER1_COMPA_vect)
 		// Window expired – LED off
 		sr.setOutput(0, 7, false);
 	}
+
+	// --- Ramp lane: input chip 2 pin 0 (rising-edge detect) ---
+	bool rampLane = sr.readInput(2, 0);
+	if (rampLane && !prevRampLane) {
+		rampLaneFlag = true;  // handled safely in main loop
+	}
+	prevRampLane = rampLane;
 
 	sr.writeAll();
 }
@@ -124,6 +133,7 @@ int main(void)
 	for (uint8_t i = 0; i < 8; i++) sr.readAll();
 	prevTrigBtn  = sr.readInput(1, 4);
 	prevScoreBtn = sr.readInput(0, 4);
+	prevRampLane = sr.readInput(2, 0);
 
 	// Pre-fill drop bank edge-detector so targets already down at power-on
 	// are not treated as new hits on the first ISR tick.
@@ -152,6 +162,11 @@ int main(void)
 			dropBankPoints = 0;
 			sei();
 			score += pts;
+			usart.sendScore(score);
+		}
+		if (rampLaneFlag) {
+			rampLaneFlag = false;
+			score += 10;
 			usart.sendScore(score);
 		}
 	}

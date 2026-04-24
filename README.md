@@ -92,10 +92,10 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 
 | Pin | Function                  |
 |-----|---------------------------|
-|  0  | (unassigned)              |
-|  1  | (unassigned)              |
-|  2  | (unassigned)              |
-|  3  | (unassigned)              |
+|  0  | Ball Entry Lane           |
+|  1  | F lane                    |
+|  2  | Y lane                    |
+|  3  | Top left Lane             |
 |  4  | Quick Shot Target  hit    |
 |  5  | (unassigned)              |
 |  6  | (unassigned)              |
