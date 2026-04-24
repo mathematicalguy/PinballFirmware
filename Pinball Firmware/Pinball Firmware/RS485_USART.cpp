@@ -38,7 +38,9 @@ RS485_USART::RS485_USART()
     _txBuffer[2] = 0x00; // Lower score byte (updated before each transmission)
     _txBuffer[3] = 0x02; // Upper score byte internal address
     _txBuffer[4] = 0x00; // Upper score byte (updated before each transmission)
-    _txBuffer[5] = 0xFF; // Lower 8 bits of stop packet (0x1FF ? bit8 set separately)
+    _txBuffer[5] = 0x03; // High score byte internal address
+    _txBuffer[6] = 0x00; // High score byte (updated before each transmission)
+    _txBuffer[7] = 0xFF; // Lower 8 bits of stop packet (0x1FF ? bit8 set separately)
 }
 
 // ---------------------------------------------------------------------------
@@ -129,15 +131,16 @@ void RS485_USART::_write9Bit(uint16_t data)
 
 void RS485_USART::_updateTxBuffer()
 {
-    _txBuffer[2] = (uint8_t)( _score & 0x00FF);        // lower byte
-    _txBuffer[4] = (uint8_t)((_score >> 8) & 0x00FF);  // upper byte
+    _txBuffer[2] = (uint8_t)( _score        & 0xFF);  // lower byte
+    _txBuffer[4] = (uint8_t)((_score >>  8) & 0xFF);  // upper byte
+    _txBuffer[6] = (uint8_t)((_score >> 16) & 0xFF);  // high  byte
 }
 
 // ---------------------------------------------------------------------------
 // sendScore()  –  transmit a new score value immediately
 // ---------------------------------------------------------------------------
 
-void RS485_USART::sendScore(uint16_t score)
+void RS485_USART::sendScore(uint32_t score)
 {
     // Wait for any in-progress burst to finish (TX Complete ISR disables itself
     // after the stop packet, clearing TXCIE0).  This prevents a concurrent call

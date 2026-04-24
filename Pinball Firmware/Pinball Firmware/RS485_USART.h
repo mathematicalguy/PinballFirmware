@@ -34,12 +34,13 @@
 /** Internal register addresses sent as data frames (bit8 = 0). */
 #define LOWER_BYTE_ADDR         0x001   ///< internal addr for lower score byte
 #define UPPER_BYTE_ADDR         0x002   ///< internal addr for upper score byte
+#define HIGH_BYTE_ADDR          0x003   ///< internal addr for high score byte (bits 16-23)
 
 /** Stop packet: bit8=1 signals end-of-transmission. */
 #define STOP_PACKET             0x1FF
 
 /** Number of bytes in one complete score transmission. */
-#define TX_BUFFER_SIZE          6
+#define TX_BUFFER_SIZE          8
 
 /** Timer 1 ISR fires every 30 ms; score updates every 5th fire (150 ms). */
 #define SCORE_UPDATE_INTERVAL   5
@@ -75,9 +76,9 @@ public:
      * Updates the internal score, refreshes the tx buffer, and kicks off
      * a new 6-byte transmission.  Call this whenever the score changes.
      *
-     * @param score  The new 16-bit score to send.
+     * @param score  The new score to send (0 – 99999).
      */
-    void sendScore(uint16_t score);
+    void sendScore(uint32_t score);
 
     /**
      * Called from the USART0 TX-complete ISR.
@@ -100,14 +101,14 @@ public:
      * Returns the current 16-bit score held by the receiver.
      * Safe to read from main loop (volatile).
      */
-    uint16_t getScore() const { return _score; }
+    uint32_t getScore() const { return _score; }
 
 private:
     // -----------------------------------------------------------------------
     // Shared state
     // -----------------------------------------------------------------------
     bool        _isMaster;          ///< true = transmitter, false = receiver
-    volatile uint16_t _score;       ///< current 16-bit score value
+    volatile uint32_t _score;       ///< current score value (0–99999)
 
     // -----------------------------------------------------------------------
     // Transmitter state
