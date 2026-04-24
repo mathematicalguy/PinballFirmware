@@ -12,6 +12,7 @@
 #include "ShiftRegister.hpp"
 #include "Flipper.hpp"
 #include "LaunchSolenoid.hpp"
+#include "DropTargetBank.hpp"
 #include "RS485_USART.h"
 
 ShiftRegister sr(&PORTB, &DDRB, PB2,   // latchIn  = pin 10
@@ -20,11 +21,13 @@ ShiftRegister sr(&PORTB, &DDRB, PB2,   // latchIn  = pin 10
 Flipper leftFlipper;
 Flipper rightFlipper;
 LaunchSolenoid launchSolenoid;
+DropTargetBank dropBank;
 
 //----------------------------------------------------------------------------
 // Global Store
 // --------------------------------------------------------------------------
-volatile uint16_t score = 10;
+volatile uint16_t score           = 10;
+volatile uint16_t dropBankPoints  = 0;  // set in ISR, drained in main loop
 
 // ---------------------------------------------------------------------------
 // Flash-window state  (input chip 1 pin 5 ) trigger | input chip 0 pin 4  score
@@ -46,6 +49,7 @@ ISR(TIMER1_COMPA_vect)
 	leftFlipper.tick();
 	rightFlipper.tick();
 	launchSolenoid.tick();
+	dropBank.tick();
 
 	// --- Trigger button: input chip 1 pin 4 (rising-edge detect) ---
 	bool trigBtn = sr.readInput(1, 6);
@@ -94,7 +98,7 @@ int main(void)
 
 	// Mirror all input SPI port 0 bits to output SPI port 2
 	sr.readAll();
-	sr.setOutputByte(2, sr.readInputByte(0));
+	sr.setOutputByte(2, 0xAF);
 	sr.writeAll();
 
 	// Left  flipper: output chip 0 pin 0 | EOS chip 1 pin 3 | buton chip 1 pin 2
@@ -103,6 +107,8 @@ int main(void)
 	rightFlipper.init(&sr, 0, 1,  1, 1,  1, 0);
 	// Launch solenoid: output chip 0 pin 2 | button chip 1 pin 4
 	launchSolenoid.init(&sr, 0, 2,  1, 4);
+	// Drop target bank: inputs chip 2 pins 1-3 | reset solenoid chip 0 pin 4
+	dropBank.init(&sr, 2,  0, 4,  &dropBankPoints);
 
 	// Timer1 CTC at 4 kHz: prescaler 8, OCR1A = (16 000 000 / 8 / 4000) - 1 = 499
 
@@ -111,6 +117,14 @@ int main(void)
 	for (uint8_t i = 0; i < 8; i++) sr.readAll();
 	prevTrigBtn  = sr.readInput(1, 4);
 	prevScoreBtn = sr.readInput(0, 4);
+
+	// Pre-fill drop bank edge-detector so targets already down at power-on
+	// are not treated as new hits on the first ISR tick.
+	uint8_t initTargets = 0;
+	if (sr.readInput(2, 1)) initTargets |= (1 << 0);
+	if (sr.readInput(2, 2)) initTargets |= (1 << 1);
+	if (sr.readInput(2, 3)) initTargets |= (1 << 2);
+	dropBank.prevTargetState = initTargets;
 
 	OCR1A  = 499;
 	TCCR1B = (1 << WGM12) | (1 << CS11);  // CTC mode, prescaler 8
@@ -121,6 +135,14 @@ int main(void)
 		if (addScoreFlag) {
 			addScoreFlag = false;
 			score += 100;
+			usart.sendScore(score);
+		}
+		if (dropBankPoints > 0) {
+			cli();
+			uint16_t pts  = dropBankPoints;
+			dropBankPoints = 0;
+			sei();
+			score += pts;
 			usart.sendScore(score);
 		}
 	}

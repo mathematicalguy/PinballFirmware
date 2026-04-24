@@ -15,15 +15,15 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 ## Hardware Resources
 | Peripheral | Status | Notes |
 |------------|--------|-------|
-| SPI | ? In use | Shift register driver |
-| Timer1 | ? In use | 4 kHz flipper ISR (CTC, prescaler 8, OCR1A=499) |
-| Timer2 | ? In use | RS485 USART transmit cadence (~100 Hz sub-tick, 30 ms effective, CTC, prescaler 1024, OCR2A=155) |
-| Timer0 | ?? Free | |
-| UART | ? In use | RS485 half-duplex, 9N1, 250 kBaud, MPCM multiprocessor mode |
-| I2C (TWI) | ?? Free | |
-| ADC | ?? Free | |
-| External Interrupts (INT0/INT1) | ?? Free | |
-| Pin Change Interrupts | ?? Free | |
+| SPI |  In use | Shift register driver |
+| Timer1 | In use | 4 kHz flipper ISR (CTC, prescaler 8, OCR1A=499) |
+| Timer2 | In use | RS485 USART transmit cadence (~100 Hz sub-tick, 30 ms effective, CTC, prescaler 1024, OCR2A=155) |
+| Timer0 |  Free | |
+| UART | In use | RS485 half-duplex, 9N1, 250 kBaud, MPCM multiprocessor mode |
+| I2C (TWI) | Free | |
+| ADC |  Free | |
+| External Interrupts (INT0/INT1) | Free | |
+| Pin Change Interrupts |  Free | |
 
 ## RS485 USART (ATmega328P)
 9-bit Multiprocessor Communication Mode over RS485 half-duplex transceiver.
@@ -42,3 +42,87 @@ Uses the hardware SPI peripheral — the following pins are reserved and cannot be
 | TX | PD1 | 1 | Serial data out to RS485 transceiver |
 | RX | PD0 | 0 | Serial data in from RS485 transceiver |
 | RTS/DE | PD2 | 2 | Transmit enable (HIGH) / Receive enable (LOW) |
+
+## SPI Shift Register Pin Usage
+
+### Output Chips (TPIC6C596 - open-drain, 3x daisy-chained)
+
+**Out 0**
+
+| Pin | Function                        |
+|-----|---------------------------------|
+|  0  | Left flipper solenoid           |
+|  1  | Right flipper solenoid          |
+|  2  | Launch solenoid                 |
+|  3  | (unassigned)                    |
+|  4  | Drop target bank reset solenoid |
+|  5  | (unassigned)                    |
+|  6  | (unassigned)                    |
+|  7  | Quick Shot LED                  |
+
+**Out 1**
+
+| Pin | Function     |
+|-----|--------------|
+|  0  | (unassigned) |
+|  1  | (unassigned) |
+|  2  | (unassigned) |
+|  3  | (unassigned) |
+|  4  | (unassigned) |
+|  5  | (unassigned) |
+|  6  | (unassigned) |
+|  7  | (unassigned) |
+
+**Out 2**
+
+| Pin | Function     |
+|-----|--------------|
+|  0  | (unassigned) |
+|  1  | (unassigned) |
+|  2  | (unassigned) |
+|  3  | (unassigned) |
+|  4  | (unassigned) |
+|  5  | (unassigned) |
+|  6  | (unassigned) |
+|  7  | (unassigned) |
+
+### Input Chips (SN74HC165 - active HIGH, 3x daisy-chained)
+
+**In 0**
+
+| Pin | Function                  |
+|-----|---------------------------|
+|  0  | (unassigned)              |
+|  1  | (unassigned)              |
+|  2  | (unassigned)              |
+|  3  | (unassigned)              |
+|  4  | Quick Shot Target  hit    |
+|  5  | (unassigned)              |
+|  6  | (unassigned)              |
+|  7  | (unassigned)              |
+
+**In 1**
+
+| Pin | Function                 |
+|-----|-------------------------|
+|  0  | Right flipper button     |
+|  1  | Right flipper EOS switch |
+|  2  | Left flipper button      |
+|  3  | Left flipper EOS switch  |
+|  4  | Launch button            |
+|  5  | No connecton             |
+|  6  | Right Pinball lane       |
+|  7  | Left Pinball lane        |
+
+**In 2**
+
+| Pin | Function      |
+|-----|---------------|
+|  0  | (unassigned)  |
+|  1  | Drop target 1 |
+|  2  | Drop target 2 |
+|  3  | Drop target 3 |
+|  4  | (unassigned)  |
+|  5  | (unassigned)  |
+|  6  | (unassigned)  |
+|  7  | (unassigned)  |

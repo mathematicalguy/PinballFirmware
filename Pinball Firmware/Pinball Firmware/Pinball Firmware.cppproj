@@ -153,6 +153,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DropTargetBank.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="DropTargetBank.hpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Flipper.cpp">
       <SubType>compile</SubType>
     </Compile>
