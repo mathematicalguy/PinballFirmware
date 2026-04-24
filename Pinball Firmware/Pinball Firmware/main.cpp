@@ -21,10 +21,13 @@ Flipper leftFlipper;
 Flipper rightFlipper;
 LaunchSolenoid launchSolenoid;
 
+//----------------------------------------------------------------------------
+// Global Store
+// --------------------------------------------------------------------------
 volatile uint16_t score = 10;
 
 // ---------------------------------------------------------------------------
-// Flash-window state  (input chip 1 pin 5 ? trigger | input chip 0 pin 4 ? score)
+// Flash-window state  (input chip 1 pin 5 ) trigger | input chip 0 pin 4  score
 // ---------------------------------------------------------------------------
 static const uint16_t FLASH_DURATION  = 20000u; // 5 s  @ 4 kHz
 static const uint16_t FLASH_HALF_PER  =  1000u; // 250 ms half-period (2 Hz)
@@ -94,7 +97,7 @@ int main(void)
 	sr.setOutputByte(2, sr.readInputByte(0));
 	sr.writeAll();
 
-	// Left  flipper:
+	// Left  flipper: output chip 0 pin 0 | EOS chip 1 pin 3 | buton chip 1 pin 2
 	leftFlipper.init(&sr,  0, 0,  1, 3,  1, 2);
 	// Right flipper: output chip 0 pin 1 | EOS chip 1 pin 1 | button chip 1 pin 0
 	rightFlipper.init(&sr, 0, 1,  1, 1,  1, 0);

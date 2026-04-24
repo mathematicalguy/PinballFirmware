@@ -1,6 +1,6 @@
 // =============================================================================
 //  ShiftRegister.cpp
-//  ATmega328P  –  SPI Shift Register Driver  (bare-metal AVR, no Arduino)
+//  ATmega328P  –  SPI Shift Register Driver 
 //
 //  OUTPUT: 3x TPIC6C596DR  (Serial-In / Parallel-Out, open-drain)
 //  INPUT:  3x SN74HC165DR  (Parallel-In / Serial-Out)

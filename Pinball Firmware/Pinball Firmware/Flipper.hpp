@@ -11,18 +11,18 @@
 //  Call tick() from the Timer1 COMPA ISR (4 kHz) AFTER sr.readAll() and
 //  BEFORE sr.writeAll().  The ISR rate sets the timing constants below:
 //
-//    4 kHz  ?  250 µs per tick
+//    4 kHz  |  250 µs per tick
 //    high_count 400 ticks  =  100 ms full-power kick
-//    PWM counter 0-99      ?  40 Hz software PWM (fine for solenoid hold)
+//    PWM counter 0-99      |  40 Hz software PWM (fine for solenoid hold)
 //
 //  Output polarity: TPIC6C596 is open-drain.
 //    setOutput(false) = gate ON  (solenoid energised)
 //    setOutput(true)  = gate OFF (solenoid de-energised)
 //
 //  Input polarity: assumed active-HIGH from 74HC165.
-//    buttonPin = 1 ? button released
-//    buttonPin = 0 ? button pressed
-//    eosPin    = 1 ? end-of-stroke switch triggered
+//    buttonPin = 1 | button released
+//    buttonPin = 0 | button pressed
+//    eosPin    = 1 | end-of-stroke switch triggered
 // =============================================================================
 
 struct Flipper
