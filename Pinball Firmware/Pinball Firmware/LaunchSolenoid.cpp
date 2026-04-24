@@ -27,9 +27,9 @@ void LaunchSolenoid::tick()
     prevBtn = btn;
 
     if (fireTimer > 0) {
-        sr->setOutput(outChip, outPin, true); // energise solenoid
+        sr->setOutput(outChip, outPin, false); // energise solenoid
         fireTimer--;
     } else {
-        sr->setOutput(outChip, outPin, false); // de-energise solenoid
+        sr->setOutput(outChip, outPin, true); // de-energise solenoid
     }
 }

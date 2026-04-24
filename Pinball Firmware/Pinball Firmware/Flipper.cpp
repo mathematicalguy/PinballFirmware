@@ -64,6 +64,6 @@ void Flipper::tick()
     // Apply software PWM.
     // setOutput(true) = bit 1 = TPIC gate ON = drain sinks = output HIGH (coil energised)
     // setOutput(false) = bit 0 = TPIC gate OFF = drain high-Z = output LOW (coil off)
-    sr->setOutput(outChip, outPin, pwmCounter < dutyCycle);
+    sr->setOutput(outChip, outPin, pwmCounter >= dutyCycle);
     if (++pwmCounter >= 100) pwmCounter = 0;
 }
