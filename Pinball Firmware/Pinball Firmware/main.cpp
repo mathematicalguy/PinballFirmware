@@ -210,7 +210,7 @@ int main(void)
 		#define APPLY_SCORE(pts) \
 			do { \
 				if (negativeMode) { \
-					if (score >= (pts)) score -= (pts); else score = SCORE_MAX; \
+					if (score >= (pts)) score -= (pts); else score = 1000UL; \
 				} else { \
 					score += (pts); \
 					if (score > SCORE_MAX) score = SCORE_MAX; \
