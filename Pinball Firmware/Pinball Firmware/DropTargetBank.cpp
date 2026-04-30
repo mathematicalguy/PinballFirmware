@@ -58,7 +58,7 @@ void DropTargetBank::tick()
     } else if (state == 2) {
         // RESETTING – pulse solenoid for up to 1 second then return to idle
         if (--stateTimer == 0) {
-            sr->setOutput(outChip, outPin, true); // solenoid on
+            sr->setOutput(outChip, outPin, false); // solenoid on
             // Stamp whatever the inputs look like right now as already-seen so
             // targets that failed to reset don't re-award points, but any that
             // did go low will score again on the next rising edge.
@@ -66,7 +66,7 @@ void DropTargetBank::tick()
             targetState     = current;
             state           = 0;
         } else {
-            sr->setOutput(outChip, outPin, false);  // solenoid off
+            sr->setOutput(outChip, outPin, true);  // solenoid off
         }
         return; // skip prevTargetState update while resetting
     }
