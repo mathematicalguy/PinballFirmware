@@ -1,102 +1,42 @@
 ﻿# System Diagram
 
 ```mermaid
-block-beta
-  columns 5
+flowchart TD
+    classDef mcu     fill:#1f2d3d,stroke:#58a6ff,color:#cdd9e5,rx:6
+    classDef outIC   fill:#1a3a1a,stroke:#3fb950,color:#cdd9e5
+    classDef inIC    fill:#2d1f3d,stroke:#a371f7,color:#cdd9e5
+    classDef commIC  fill:#3d2010,stroke:#f0883e,color:#cdd9e5
+    classDef sb      fill:#1f2d3d,stroke:#f0883e,color:#cdd9e5
 
-  %% ── Row 1: ATmega328P ───────────────────────────────────────────────────
-  MCU["ATmega328P\n(Arduino Uno R3)\nF_CPU = 16 MHz\nTimer1 ISR @ 4 kHz"]:5
+    MCU["🖥️ ATmega328P — Arduino Uno R3\nF_CPU = 16 MHz\nTimer1 CTC ISR @ 4 kHz  250 µs per tick\nSPI Master · USART0"]:::mcu
 
-  %% ── Row 2: SPI bus labels ───────────────────────────────────────────────
-  space:1
-  SPI_OUT_BUS["SPI Output Chain\nMOSI PB3 · SCK PB5\nLATCH_OUT RCK PB1 (pin 9)"]:2
-  SPI_IN_BUS["SPI Input Chain\nMISO PB4 · SCK PB5\nLATCH_IN SH/LD PB2 (pin 10)"]:2
+    subgraph OUT_CHAIN["🟢 SPI Output Chain — TPIC6C596  Open-Drain  Serial-In / Parallel-Out\nMOSI → PB3  SCK → PB5  LATCH_OUT RCK → PB1  pin 9"]
+        direction LR
+        OUT0["TPIC6C596 #0\n─────────────\np0 Left Flipper Solenoid\np1 Right Flipper Solenoid\np2 Launch Solenoid\np4 Drop Target Reset\np7 Hurry-Up LED"]:::outIC
+        OUT1["TPIC6C596 #1\n─────────────\np0 F Lane LED\np1 Y Lane LED"]:::outIC
+        OUT2["TPIC6C596 #2\n─────────────\n(reserved)"]:::outIC
+        OUT0 -->|SER| OUT1 -->|SER| OUT2
+    end
 
-  %% ── Row 3: Output ICs ───────────────────────────────────────────────────
-  space:1
-  OUT0["TPIC6C596 #0\n(Output Chip 0)\nOpen-Drain x8"]:1
-  OUT1["TPIC6C596 #1\n(Output Chip 1)\nOpen-Drain x8"]:1
-  OUT2["TPIC6C596 #2\n(Output Chip 2)\nOpen-Drain x8"]:1
-  space:1
+    subgraph IN_CHAIN["🟣 SPI Input Chain — SN74HC165  Parallel-In / Serial-Out\nMISO ← PB4  SCK → PB5  LATCH_IN SH/LD → PB2  pin 10"]
+        direction LR
+        IN0["SN74HC165 #0\n─────────────\np0 Ball Entry Lane\np1 F Lane Rollover\np2 Y Lane Rollover\np3 Top Left Lane\np4 Quick Shot Button"]:::inIC
+        IN1["SN74HC165 #1\n─────────────\np0 Right Flipper Button\np1 Right Flipper EOS\np2 Left Flipper Button\np3 Left Flipper EOS\np4 Launch Button\np6 Right Lane\np7 Left Lane"]:::inIC
+        IN2["SN74HC165 #2\n─────────────\np0 Ramp Exit Sensor\np1 Drop Target 1\np2 Drop Target 2\np3 Drop Target 3"]:::inIC
+        IN0 -->|QH→SER| IN1 -->|QH→SER| IN2
+    end
 
-  %% ── Row 4: Input ICs ────────────────────────────────────────────────────
-  space:1
-  IN0["SN74HC165 #0\n(Input Chip 0)\nParallel-In x8"]:1
-  IN1["SN74HC165 #1\n(Input Chip 1)\nParallel-In x8"]:1
-  IN2["SN74HC165 #2\n(Input Chip 2)\nParallel-In x8"]:1
-  space:1
+    subgraph RS485_BUS["🟠 RS485 Bus — USART0  9N1  250 000 bps  half-duplex\n9-bit Multiprocessor Communication Mode"]
+        direction LR
+        XCVR["RS485 Transceiver\n─────────────\nDE/RE → PD2  pin 2\nTX    → PD1  pin 1"]:::commIC
+        SB["Score Board\n─────────────\nRS485 Receiver\nAddr 0x10\nLower byte reg 0x001\nUpper byte reg 0x002\nHigh  byte reg 0x003\nStop packet   0x1FF"]:::sb
+        XCVR -->|"8-frame score packet"| SB
+    end
 
-  %% ── Row 5: RS485 block ──────────────────────────────────────────────────
-  RS485["RS485 Transceiver\nDE/RE → PD2 (pin 2)\nTX  → PD1 (pin 1)\n9N1 · 250 000 bps\nhalf-duplex"]:2
-  space:1
-  SB["Score Board\n(RS485 Receiver)\nAddr 0x10\nLower/Upper/High byte regs"]:2
-
-  %% ── Edges ───────────────────────────────────────────────────────────────
-  MCU --> SPI_OUT_BUS
-  MCU --> SPI_IN_BUS
-  SPI_OUT_BUS --> OUT0
-  OUT0 --> OUT1
-  OUT1 --> OUT2
-  SPI_IN_BUS --> IN0
-  IN0 --> IN1
-  IN1 --> IN2
-  MCU --> RS485
-  RS485 --> SB
+    MCU -->|"MOSI · SCK · LATCH_OUT"| OUT_CHAIN
+    MCU -->|"MISO · SCK · LATCH_IN"| IN_CHAIN
+    MCU -->|"USART0 TX · DE/RE toggle"| RS485_BUS
 ```
-
----
-
-## SPI Output Chain — TPIC6C596 Pin Assignments
-
-| Chip | Pin | Signal | Function |
-|------|-----|--------|----------|
-| Out 0 | 0 | Left Flipper Solenoid | Full-power kick → PWM hold |
-| Out 0 | 1 | Right Flipper Solenoid | Full-power kick → PWM hold |
-| Out 0 | 2 | Launch Solenoid | 1 s fire pulse on button press |
-| Out 0 | 4 | Drop Target Reset Solenoid | Pulsed 1 s after 3 s wait on full clear |
-| Out 0 | 7 | Hurry-Up LED | Flashes 2 Hz during 5 s hurry-up window |
-| Out 1 | 0 | F Lane LED | Lit when F top-lane rollover is active |
-| Out 1 | 1 | Y Lane LED | Lit when Y top-lane rollover is active |
-
----
-
-## SPI Input Chain — SN74HC165 Pin Assignments
-
-| Chip | Pin | Signal | Function |
-|------|-----|--------|----------|
-| In 0 | 0 | Ball Entry Lane | Step 2 of mode-sequence; debounced |
-| In 0 | 1 | F Lane Rollover | Lights F LED; top-lane jackpot logic |
-| In 0 | 2 | Y Lane Rollover | Lights Y LED; top-lane jackpot logic |
-| In 0 | 3 | Top Left Lane | Step 1 of mode-sequence |
-| In 0 | 4 | Quick Shot Button | Awards +100 pts during hurry-up window |
-| In 1 | 0 | Right Flipper Button | Flipper control + lane-light rotation |
-| In 1 | 1 | Right Flipper EOS | End-of-stroke cuts kick phase early |
-| In 1 | 2 | Left Flipper Button | Flipper control + lane-light rotation |
-| In 1 | 3 | Left Flipper EOS | End-of-stroke cuts kick phase early |
-| In 1 | 4 | Launch Button | Triggers 1 s launch solenoid pulse |
-| In 1 | 6 | Right Lane | Step 3 of mode-sequence; opens hurry-up window |
-| In 1 | 7 | Left Lane | General lane input |
-| In 2 | 0 | Ramp Exit Sensor | Awards +10 pts per ball passage |
-| In 2 | 1 | Drop Target 1 | +10 pts on hit; contributes to full-clear bonus |
-| In 2 | 2 | Drop Target 2 | +10 pts on hit; contributes to full-clear bonus |
-| In 2 | 3 | Drop Target 3 | +10 pts on hit; +50 bonus on full clear |
-
----
-
-## RS485 / Score Board Protocol
-
-| Detail | Value |
-|--------|-------|
-| MCU USART | USART0, 9N1, 250 000 bps |
-| Direction control | PD2 HIGH = TX, LOW = RX |
-| Frame type | 9-bit Multiprocessor Communication Mode |
-| Scoreboard address frame | `0x110` (bit 8 = 1, addr = 0x10) |
-| Register — lower byte | `0x001` |
-| Register — upper byte | `0x002` |
-| Register — high byte | `0x003` |
-| Stop packet | `0x1FF` (bit 8 = 1) |
-| TX buffer size | 8 frames per score update |
-| Score range | 0 – 99 999 |
 
 ---
 
